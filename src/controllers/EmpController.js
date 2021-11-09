@@ -4,20 +4,31 @@ module.exports = {
   async index(req, res) {
     const request = new sql.Request();
 
-    const { filial, op, produto } = req.query;
+    // kanban true = filtrar tudo que S
+    // kanban false = filtrar tudo que é diferente de S
+    // kanban null = filtrar nada
 
-    if(filial!=null) {
+    const { filial, op, produto, kanban} = req.query;
+
+    if (filial!=null) {
       filial_condition = `SD4.D4_FILIAL IN (${filial}) AND`;
     } else {filial_condition = ``;};
 
-    if(op!=null) {
+    if (op!=null) {
       op_condition = `SD4.D4_OP = ('${op}') AND`;
     } else {op_condition = ``;};
 
-    if(produto!=null) {
+    if (produto!=null) {
       produto_condition = `SD4.D4_COD IN ('${produto}') AND`;
     } else {produto_condition = ``;};
-           
+
+    if (kanban === 'true') {
+      kanban_condition = `SB1.B1_ZZKANBA = 'S' AND`;
+    } else if (kanban === 'false') {
+      kanban_condition = `SB1.B1_ZZKANBA <> 'S' AND`;
+    } else {kanban_condition = ``;};
+    console.log("kanban:", kanban)
+    console.log("kanban_condition:", kanban_condition);     
     //CONCAT(SUBSTRING(SC2.C2_DATPRI,7,2),'/',SUBSTRING(SC2.C2_DATPRI,5,2),'/',SUBSTRING(SC2.C2_DATPRI,1,4)) AS ENTREGA
 
         // query to the database and get the records
@@ -30,6 +41,7 @@ module.exports = {
                     SD4.D4_LOCAL AS ARMAZEM,
                     SD4.D4_QTDEORI AS QUANTIDADE,
                     SD4.D4_QUANT AS SALDO,
+                    SB1.B1_ZZKANBA AS KANBAN,
                     RTRIM(SD4.D4_OP) AS OP,
                     RTRIM(SC2.C2_PRODUTO) AS DEC_OP,
                     CONCAT(SUBSTRING(SC2.C2_DATPRI,7,2),'/',SUBSTRING(SC2.C2_DATPRI,5,2),'/',SUBSTRING(SC2.C2_DATPRI,1,4)) AS ENTREGA
@@ -41,6 +53,7 @@ module.exports = {
             WHERE	  ${op_condition}
                     ${filial_condition}
                     ${produto_condition}
+                    ${kanban_condition}
                     SD4.D4_QUANT > 0 AND
                     SD4.D_E_L_E_T_ = ''
 
